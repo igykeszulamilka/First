@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>KAPCS — Shelly LAN</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #1a2218;
+      --muted: #5c6b57;
+      --paper: #e8efe3;
+      --panel: rgba(255, 252, 246, 0.78);
+      --line: rgba(26, 34, 24, 0.12);
+      --accent: #0f7a5a;
+      --accent-deep: #0a5240;
+      --on: #c6f26d;
+      --on-ink: #243015;
+      --off: #d7ddd2;
+      --danger: #b42318;
+      --shadow: 0 18px 50px rgba(26, 34, 24, 0.12);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      font-family: "Source Sans 3", system-ui, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 700px at 10% -10%, #f4ffd8 0%, transparent 55%),
+        radial-gradient(900px 600px at 100% 0%, #cfe8dc 0%, transparent 50%),
+        linear-gradient(160deg, #f3f7ef 0%, #dfe9d8 45%, #c9d8c4 100%);
+      background-attachment: fixed;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.35;
+      background-image:
+        linear-gradient(rgba(26, 34, 24, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(26, 34, 24, 0.04) 1px, transparent 1px);
+      background-size: 28px 28px;
+      mask-image: radial-gradient(circle at 50% 20%, black, transparent 75%);
+    }
+
+    .wrap {
+      width: min(980px, calc(100% - 2rem));
+      margin: 0 auto;
+      padding: 2.2rem 0 4rem;
+      position: relative;
+    }
+
+    header {
+      display: grid;
+      gap: 0.85rem;
+      margin-bottom: 1.8rem;
+      animation: rise 0.7s ease both;
+    }
+
+    .brand {
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-weight: 800;
+      font-size: clamp(2.6rem, 8vw, 4.4rem);
+      letter-spacing: -0.04em;
+      line-height: 0.92;
+      margin: 0;
+    }
+
+    .brand span {
+      display: inline-block;
+      background: linear-gradient(120deg, var(--accent) 0%, #1f9a4a 55%, #7dbb2e 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .lede {
+      margin: 0;
+      max-width: 36rem;
+      color: var(--muted);
+      font-size: 1.05rem;
+      line-height: 1.45;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.7rem;
+      margin-top: 0.4rem;
+    }
+
+    button, .btn {
+      font: inherit;
+      border: 0;
+      cursor: pointer;
+      border-radius: 999px;
+      padding: 0.72rem 1.05rem;
+      background: var(--ink);
+      color: #f4f8f1;
+      font-weight: 700;
+      transition: transform 0.18s ease, background 0.18s ease, opacity 0.18s ease;
+    }
+    button:hover { transform: translateY(-1px); }
+    button:active { transform: translateY(1px) scale(0.98); }
+    button.secondary {
+      background: transparent;
+      color: var(--ink);
+      outline: 1.5px solid var(--line);
+    }
+    button.ghost {
+      background: rgba(255,255,255,0.55);
+      color: var(--ink);
+    }
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .panel {
+      background: var(--panel);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1.1rem;
+      animation: rise 0.75s ease both;
+    }
+
+    .panel + .panel { margin-top: 1rem; }
+
+    .panel h2 {
+      margin: 0 0 0.85rem;
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-size: 1.15rem;
+      letter-spacing: -0.02em;
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 0.7rem;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    @media (max-width: 700px) {
+      .form-grid { grid-template-columns: 1fr; }
+    }
+
+    label {
+      display: grid;
+      gap: 0.28rem;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    input, select {
+      font: inherit;
+      border: 1.5px solid var(--line);
+      border-radius: 12px;
+      padding: 0.7rem 0.8rem;
+      background: rgba(255,255,255,0.85);
+      color: var(--ink);
+      outline: none;
+    }
+    input:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(15, 122, 90, 0.15);
+    }
+    .mono { font-family: "IBM Plex Mono", monospace; font-size: 0.92rem; }
+
+    .row-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+      align-items: end;
+    }
+    .row-actions > * { flex: 1 1 auto; }
+
+    .status-line {
+      margin-top: 0.8rem;
+      min-height: 1.3rem;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    .status-line.error { color: var(--danger); }
+    .status-line.ok { color: var(--accent-deep); }
+
+    .devices {
+      display: grid;
+      gap: 0.85rem;
+      margin-top: 1rem;
+    }
+
+    .device {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 0.85rem;
+      align-items: center;
+      padding: 1rem 1.05rem;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.72);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+      animation: rise 0.5s ease both;
+    }
+    .device.on {
+      border-color: rgba(125, 187, 46, 0.55);
+      box-shadow: inset 0 0 0 1px rgba(198, 242, 109, 0.35), 0 10px 30px rgba(125, 187, 46, 0.12);
+    }
+    .device.busy { opacity: 0.7; }
+
+    .device-meta h3 {
+      margin: 0;
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-size: 1.2rem;
+      letter-spacing: -0.02em;
+    }
+    .device-meta p {
+      margin: 0.2rem 0 0;
+      color: var(--muted);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.78rem;
+    }
+
+    .device-actions {
+      display: flex;
+      gap: 0.45rem;
+      align-items: center;
+    }
+
+    .toggle {
+      width: 74px;
+      height: 42px;
+      border-radius: 999px;
+      padding: 4px;
+      background: var(--off);
+      position: relative;
+      border: 0;
+    }
+    .toggle::after {
+      content: "";
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: white;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+      transition: transform 0.22s cubic-bezier(.2,.8,.2,1), background 0.2s ease;
+    }
+    .toggle[aria-pressed="true"] {
+      background: linear-gradient(135deg, var(--on), #8fd63b);
+    }
+    .toggle[aria-pressed="true"]::after {
+      transform: translateX(32px);
+      background: var(--on-ink);
+    }
+
+    .icon-btn {
+      width: 42px;
+      height: 42px;
+      padding: 0;
+      border-radius: 12px;
+      background: rgba(26, 34, 24, 0.06);
+      color: var(--ink);
+      font-size: 1.05rem;
+      line-height: 1;
+    }
+
+    .empty {
+      padding: 1.4rem 0.4rem 0.6rem;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-top: 0.55rem;
+    }
+    .chip {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.72rem;
+      padding: 0.28rem 0.55rem;
+      border-radius: 999px;
+      background: rgba(15, 122, 90, 0.1);
+      color: var(--accent-deep);
+    }
+
+    footer {
+      margin-top: 1.4rem;
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.4;
+    }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1 class="brand"><span>KAPCS</span></h1>
+      <p class="lede">Kis LAN kapcsolópanel Shelly eszközökhöz. Kapcsold fel-le a reléket a helyi hálózaton — felhő nélkül.</p>
+      <div class="toolbar">
+        <button type="button" id="btnRefresh">Állapot frissítése</button>
+        <button type="button" class="secondary" id="btnScan">Hálózat keresése</button>
+        <button type="button" class="ghost" id="btnClear">Lista ürítése</button>
+      </div>
+    </header>
+
+    <section class="panel">
+      <h2>Eszköz hozzáadása</h2>
+      <div class="form-grid">
+        <label>Név
+          <input id="name" placeholder="Pl. Nappali lámpa" autocomplete="off" />
+        </label>
+        <label>IP cím
+          <input id="ip" class="mono" placeholder="192.168.1.50" inputmode="decimal" autocomplete="off" />
+        </label>
+        <label>Típus
+          <select id="kind">
+            <option value="auto">Automatikus felismerés</option>
+            <option value="switch">Kapcsoló / relé</option>
+            <option value="light">Világítás</option>
+            <option value="cover">Redőny / motor</option>
+          </select>
+        </label>
+        <label>Jelszó (opcionális, Basic auth)
+          <input id="password" type="password" placeholder="ha védve van az eszköz" autocomplete="off" />
+        </label>
+      </div>
+      <div class="row-actions" style="margin-top:0.85rem">
+        <button type="button" id="btnAdd">Hozzáadás / felismerés</button>
+        <label style="flex:1.2">Scan tartomány (/24)
+          <input id="cidr" class="mono" placeholder="192.168.1.0/24" />
+        </label>
+      </div>
+      <div class="status-line" id="status" role="status"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Eszközök</h2>
+      <div class="devices" id="devices"></div>
+      <div class="empty" id="empty">Még nincs eszköz. Add meg egy Shelly IP-jét, vagy indíts keresést a LAN-on.</div>
+    </section>
+
+    <footer>
+      Futtasd a helyi szervert a saját gépeden (<span class="mono">python3 server.py</span>), majd nyisd meg a
+      <span class="mono">http://127.0.0.1:8787</span> címet. A böngésző közvetlenül nem beszélne jól a Shelly API-val (CORS), ezért kell a kis proxy.
+    </footer>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "kapcs.devices.v1";
+    const devicesEl = document.getElementById("devices");
+    const emptyEl = document.getElementById("empty");
+    const statusEl = document.getElementById("status");
+
+    /** @type {Array<{id:string,ip:string,name:string,model:string,gen:number,type:string,channel:number,auth?:string,on?:boolean|null}>} */
+    let devices = loadDevices();
+
+    function loadDevices() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      } catch {
+        return [];
+      }
+    }
+
+    function saveDevices() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(devices));
+    }
+
+    function setStatus(msg, kind = "") {
+      statusEl.textContent = msg || "";
+      statusEl.className = "status-line" + (kind ? " " + kind : "");
+    }
+
+    function authHeader(password) {
+      if (!password) return "";
+      return btoa("admin:" + password);
+    }
+
+    async function api(path, options = {}) {
+      const res = await fetch(path, {
+        headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+        ...options,
+      });
+      const text = await res.text();
+      let data = null;
+      try { data = text ? JSON.parse(text) : null; } catch { data = { raw: text }; }
+      if (!res.ok) {
+        const err = new Error((data && (data.error || data.message)) || res.statusText || "request failed");
+        err.status = res.status;
+        err.data = data;
+        throw err;
+      }
+      return data;
+    }
+
+    async function proxy(ip, path, { method = "GET", body = undefined, auth = "" } = {}) {
+      return api("/api/proxy", {
+        method: "POST",
+        body: JSON.stringify({ ip, path, method, body, auth }),
+      });
+    }
+
+    function render() {
+      devicesEl.innerHTML = "";
+      emptyEl.style.display = devices.length ? "none" : "block";
+
+      devices.forEach((device, index) => {
+        const card = document.createElement("article");
+        card.className = "device" + (device.on ? " on" : "");
+        card.dataset.id = device.id;
+
+        const isCover = device.type === "cover";
+        const pressed = !!device.on;
+
+        card.innerHTML = `
+          <div class="device-meta">
+            <h3>${escapeHtml(device.name)}</h3>
+            <p>${escapeHtml(device.ip)} · Gen${device.gen} · ${escapeHtml(device.model || device.type)}</p>
+            <div class="chips">
+              <span class="chip">${escapeHtml(device.type)}</span>
+              <span class="chip">ch ${device.channel ?? 0}</span>
+              <span class="chip">${device.on == null ? "ismeretlen" : device.on ? "BE" : "KI"}</span>
+            </div>
+          </div>
+          <div class="device-actions"></div>
+        `;
+
+        const actions = card.querySelector(".device-actions");
+
+        if (isCover) {
+          ["open", "close", "stop"].forEach((action) => {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "secondary";
+            btn.textContent = action === "open" ? "Fel" : action === "close" ? "Le" : "Stop";
+            btn.addEventListener("click", () => coverMove(device, action, card));
+            actions.appendChild(btn);
+          });
+        } else {
+          const toggle = document.createElement("button");
+          toggle.type = "button";
+          toggle.className = "toggle";
+          toggle.setAttribute("aria-pressed", pressed ? "true" : "false");
+          toggle.title = "Kapcsolás";
+          toggle.addEventListener("click", () => toggleDevice(device, card));
+          actions.appendChild(toggle);
+        }
+
+        const refreshBtn = document.createElement("button");
+        refreshBtn.type = "button";
+        refreshBtn.className = "icon-btn";
+        refreshBtn.title = "Frissítés";
+        refreshBtn.textContent = "↻";
+        refreshBtn.addEventListener("click", () => refreshOne(device, card));
+        actions.appendChild(refreshBtn);
+
+        const removeBtn = document.createElement("button");
+        removeBtn.type = "button";
+        removeBtn.className = "icon-btn";
+        removeBtn.title = "Törlés";
+        removeBtn.textContent = "×";
+        removeBtn.addEventListener("click", () => {
+          devices.splice(index, 1);
+          saveDevices();
+          render();
+        });
+        actions.appendChild(removeBtn);
+
+        devicesEl.appendChild(card);
+      });
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+
+    async function detectDevice(ip, password) {
+      const auth = authHeader(password);
+      const probed = await api(`/api/probe?ip=${encodeURIComponent(ip)}`);
+      // refine type via status endpoints
+      let type = "switch";
+      let channel = 0;
+      let on = null;
+      let name = probed.name;
+
+      if (probed.gen === 2) {
+        try {
+          const sw = await proxy(ip, "/rpc/Switch.GetStatus", { method: "POST", body: { id: 0 }, auth });
+          on = !!sw.output;
+          type = "switch";
+        } catch {
+          try {
+            const light = await proxy(ip, "/rpc/Light.GetStatus", { method: "POST", body: { id: 0 }, auth });
+            on = !!light.output;
+            type = "light";
+          } catch {
+            try {
+              await proxy(ip, "/rpc/Cover.GetStatus", { method: "POST", body: { id: 0 }, auth });
+              type = "cover";
+              on = null;
+            } catch {
+              type = "switch";
+            }
+          }
+        }
+        try {
+          const cfg = await proxy(ip, "/rpc/Sys.GetConfig", { method: "POST", body: null, auth });
+          if (cfg && cfg.device && cfg.device.name) name = cfg.device.name;
+        } catch { /* ignore */ }
+      } else {
+        const status = await proxy(ip, "/status", { auth });
+        if (Array.isArray(status.relays) && status.relays.length) {
+          type = "relay";
+          on = !!status.relays[0].ison;
+        } else if (Array.isArray(status.lights) && status.lights.length) {
+          type = "light";
+          on = !!status.lights[0].ison;
+        } else if (status.rollers || status.cover) {
+          type = "cover";
+        }
+        if (status.name) name = status.name;
+      }
+
+      return {
+        id: `${ip}-${probed.id || probed.model}`,
+        ip,
+        name: name || ip,
+        model: probed.model,
+        gen: probed.gen,
+        type,
+        channel,
+        auth,
+        on,
+      };
+    }
+
+    async function refreshOne(device, card) {
+      if (card) card.classList.add("busy");
+      try {
+        if (device.gen === 2) {
+          if (device.type === "cover") {
+            await proxy(device.ip, "/rpc/Cover.GetStatus", { method: "POST", body: { id: device.channel || 0 }, auth: device.auth });
+            device.on = null;
+          } else if (device.type === "light") {
+            const st = await proxy(device.ip, "/rpc/Light.GetStatus", { method: "POST", body: { id: device.channel || 0 }, auth: device.auth });
+            device.on = !!st.output;
+          } else {
+            const st = await proxy(device.ip, "/rpc/Switch.GetStatus", { method: "POST", body: { id: device.channel || 0 }, auth: device.auth });
+            device.on = !!st.output;
+          }
+        } else {
+          const st = await proxy(device.ip, "/status", { auth: device.auth });
+          if (device.type === "light" && st.lights) device.on = !!st.lights[device.channel || 0]?.ison;
+          else if (device.type === "cover") device.on = null;
+          else device.on = !!st.relays?.[device.channel || 0]?.ison;
+        }
+        saveDevices();
+        render();
+      } catch (err) {
+        setStatus(`${device.name}: ${err.message}`, "error");
+      } finally {
+        if (card) card.classList.remove("busy");
+      }
+    }
+
+    async function toggleDevice(device, card) {
+      card.classList.add("busy");
+      const next = !device.on;
+      try {
+        if (device.gen === 2) {
+          if (device.type === "light") {
+            await proxy(device.ip, "/rpc/Light.Set", {
+              method: "POST",
+              body: { id: device.channel || 0, on: next },
+              auth: device.auth,
+            });
+          } else {
+            await proxy(device.ip, "/rpc/Switch.Set", {
+              method: "POST",
+              body: { id: device.channel || 0, on: next },
+              auth: device.auth,
+            });
+          }
+        } else {
+          const base = device.type === "light" ? "light" : "relay";
+          await proxy(device.ip, `/${base}/${device.channel || 0}?turn=${next ? "on" : "off"}`, { auth: device.auth });
+        }
+        device.on = next;
+        saveDevices();
+        render();
+        setStatus(`${device.name}: ${next ? "BE" : "KI"}`, "ok");
+      } catch (err) {
+        setStatus(`${device.name}: ${err.message}`, "error");
+        await refreshOne(device);
+      }
+    }
+
+    async function coverMove(device, action, card) {
+      card.classList.add("busy");
+      try {
+        if (device.gen === 2) {
+          const map = { open: "Open", close: "Close", stop: "Stop" };
+          await proxy(device.ip, `/rpc/Cover.${map[action]}`, {
+            method: "POST",
+            body: { id: device.channel || 0 },
+            auth: device.auth,
+          });
+        } else {
+          const map = { open: "open", close: "close", stop: "stop" };
+          await proxy(device.ip, `/roller/${device.channel || 0}?go=${map[action]}`, { auth: device.auth });
+        }
+        setStatus(`${device.name}: ${action}`, "ok");
+      } catch (err) {
+        setStatus(`${device.name}: ${err.message}`, "error");
+      } finally {
+        card.classList.remove("busy");
+      }
+    }
+
+    async function refreshAll() {
+      setStatus("Frissítés…");
+      for (const device of devices) {
+        await refreshOne(device);
+      }
+      setStatus(devices.length ? "Kész." : "Nincs eszköz.", devices.length ? "ok" : "");
+    }
+
+    document.getElementById("btnAdd").addEventListener("click", async () => {
+      const ip = document.getElementById("ip").value.trim();
+      const manualName = document.getElementById("name").value.trim();
+      const kind = document.getElementById("kind").value;
+      const password = document.getElementById("password").value;
+      if (!ip) {
+        setStatus("Adj meg egy IP címet.", "error");
+        return;
+      }
+      setStatus("Felismerés…");
+      try {
+        const device = await detectDevice(ip, password);
+        if (manualName) device.name = manualName;
+        if (kind !== "auto") device.type = kind === "switch" ? (device.gen === 1 ? "relay" : "switch") : kind;
+        devices = devices.filter((d) => d.ip !== device.ip);
+        devices.push(device);
+        saveDevices();
+        render();
+        setStatus(`Hozzáadva: ${device.name} (${device.model})`, "ok");
+        document.getElementById("ip").value = "";
+        document.getElementById("name").value = "";
+      } catch (err) {
+        setStatus(err.message || "Nem található Shelly ezen az IP-n.", "error");
+      }
+    });
+
+    document.getElementById("btnRefresh").addEventListener("click", refreshAll);
+    document.getElementById("btnClear").addEventListener("click", () => {
+      if (!devices.length) return;
+      if (confirm("Töröljük az összes eszközt a listáról?")) {
+        devices = [];
+        saveDevices();
+        render();
+        setStatus("Lista üres.", "ok");
+      }
+    });
+
+    document.getElementById("btnScan").addEventListener("click", async () => {
+      const cidr = document.getElementById("cidr").value.trim() || "192.168.1.0/24";
+      setStatus(`Keresés: ${cidr} (ez eltarthat fél–egy percig)…`);
+      try {
+        const result = await api("/api/scan", {
+          method: "POST",
+          body: JSON.stringify({ cidr }),
+        });
+        let added = 0;
+        for (const found of result.devices || []) {
+          if (devices.some((d) => d.ip === found.ip)) continue;
+          try {
+            const full = await detectDevice(found.ip, "");
+            devices.push(full);
+            added += 1;
+          } catch {
+            devices.push({
+              id: `${found.ip}-${found.id}`,
+              ip: found.ip,
+              name: found.name || found.ip,
+              model: found.model,
+              gen: found.gen,
+              type: found.type || "switch",
+              channel: 0,
+              auth: "",
+              on: null,
+            });
+            added += 1;
+          }
+        }
+        saveDevices();
+        render();
+        setStatus(`Találat: ${(result.devices || []).length}, új: ${added}`, "ok");
+      } catch (err) {
+        setStatus(err.message, "error");
+      }
+    });
+
+    // Suggest local /24 from hostname if possible
+    (async () => {
+      try {
+        await api("/api/health");
+        const host = location.hostname;
+        if (/^\d+\.\d+\.\d+\.\d+$/.test(host)) {
+          const parts = host.split(".");
+          document.getElementById("cidr").placeholder = `${parts[0]}.${parts[1]}.${parts[2]}.0/24`;
+          if (!document.getElementById("cidr").value) {
+            document.getElementById("cidr").value = `${parts[0]}.${parts[1]}.${parts[2]}.0/24`;
+          }
+        } else if (!document.getElementById("cidr").value) {
+          document.getElementById("cidr").value = "192.168.1.0/24";
+        }
+      } catch {
+        setStatus("A panel szerver nem elérhető. Indítsd: python3 server.py", "error");
+      }
+      render();
+      if (devices.length) refreshAll();
+    })();
+  </script>
+</body>
+</html>
