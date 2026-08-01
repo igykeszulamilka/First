@@ -50,7 +50,7 @@ def fetch(url: str, method: str = "GET", body: bytes | None = None, headers: dic
 
 
 def probe_device(ip: str) -> dict | None:
-    # Gen2 first
+    # Gen2 first (POST RPC). 401 = Shelly van ott, csak jelszó kell.
     status, data, _ = fetch(f"http://{ip}/rpc/Shelly.GetDeviceInfo", method="POST", body=b"{}")
     if status == 200:
         try:
@@ -64,6 +64,17 @@ def probe_device(ip: str) -> dict | None:
             "name": info.get("name") or info.get("id") or ip,
             "model": info.get("model") or info.get("app") or "Shelly Gen2",
             "type": "switch",
+            "auth": False,
+        }
+    if status == 401:
+        return {
+            "ip": ip,
+            "gen": 2,
+            "id": ip,
+            "name": ip,
+            "model": "Shelly Gen2 (jelszó védett)",
+            "type": "switch",
+            "auth": True,
         }
 
     status, data, _ = fetch(f"http://{ip}/shelly")
@@ -79,6 +90,17 @@ def probe_device(ip: str) -> dict | None:
             "name": info.get("name") or info.get("type") or ip,
             "model": info.get("type") or info.get("model") or "Shelly Gen1",
             "type": "relay",
+            "auth": False,
+        }
+    if status == 401:
+        return {
+            "ip": ip,
+            "gen": 1,
+            "id": ip,
+            "name": ip,
+            "model": "Shelly Gen1 (jelszó védett)",
+            "type": "relay",
+            "auth": True,
         }
     return None
 
