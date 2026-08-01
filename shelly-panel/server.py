@@ -7,15 +7,25 @@ import argparse
 import ipaddress
 import json
 import socket
+import sys
 import threading
 import urllib.error
 import urllib.request
+import webbrowser
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
-ROOT = Path(__file__).resolve().parent
+
+def app_root() -> Path:
+    """Source folder, or PyInstaller temp extract dir when frozen as .exe."""
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        return Path(sys._MEIPASS)
+    return Path(__file__).resolve().parent
+
+
+ROOT = app_root()
 INDEX = ROOT / "index.html"
 TIMEOUT = 2.5
 
@@ -210,23 +220,29 @@ def guess_default_cidr() -> str:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Shelly LAN panel")
+    parser = argparse.ArgumentParser(description="Shelly LAN panel / KAPCS")
     parser.add_argument("--host", default="0.0.0.0")
     parser.add_argument("--port", type=int, default=8787)
+    parser.add_argument("--no-browser", action="store_true", help="Ne nyissa meg automatikusan a böngészőt")
     args = parser.parse_args()
 
     if not INDEX.exists():
         raise SystemExit(f"Missing UI file: {INDEX}")
 
     httpd = ThreadingHTTPServer((args.host, args.port), Handler)
+    url = f"http://127.0.0.1:{args.port}"
     cidr = guess_default_cidr()
-    print(f"Shelly LAN panel → http://127.0.0.1:{args.port}")
-    print(f"Suggested scan range: {cidr}")
-    print("Ctrl+C to stop.")
+    print("KAPCS — Shelly LAN panel")
+    print(f"  Böngésző:  {url}")
+    print(f"  Telefon:   http://<ennek-a-gepnek-az-IP-je>:{args.port}")
+    print(f"  Scan tipp: {cidr}")
+    print("  Leállítás: Ctrl+C")
+    if not args.no_browser:
+        threading.Timer(0.6, lambda: webbrowser.open(url)).start()
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
-        print("\nStopped.")
+        print("\nLeállítva.")
     finally:
         httpd.server_close()
 
