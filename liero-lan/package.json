@@ -1,0 +1,17 @@
+{
+  "name": "liero-lan",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Browser multiplayer Liero-like game for LAN",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "ws": "^8.18.3"
+  }
+}
