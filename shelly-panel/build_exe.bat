@@ -12,7 +12,8 @@ if not defined PY (
 )
 
 %PY% -m pip install --upgrade pip pyinstaller
-%PY% -m PyInstaller --noconfirm --clean --onefile --windowed --name KAPCS --add-data "index.html;." server.py
+REM --console: látszik a fekete ablak (URL + Ctrl+C a leállításhoz)
+%PY% -m PyInstaller --noconfirm --clean --onefile --console --name KAPCS --add-data "index.html;." server.py
 
 echo.
 echo Kész: dist\KAPCS.exe

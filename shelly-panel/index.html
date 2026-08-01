@@ -718,7 +718,15 @@
         }
         saveDevices();
         render();
-        setStatus(`Találat: ${(result.devices || []).length}, új: ${added}`, "ok");
+        const total = (result.devices || []).length;
+        if (total === 0) {
+          setStatus(
+            `Nincs találat a(z) ${cidr} tartományban. Ellenőrizd: 1) start.bat a Windowsodon fut-e (nem Cloud), 2) jó-e a tartomány (PC IP első 3 száma + .0/24), 3) Shelly ugyanazon a Wi‑Fin van-e (nem vendégháló), 4) vagy add meg kézzel az IP-t a Shelly appból.`,
+            "error"
+          );
+        } else {
+          setStatus(`Találat: ${total}, új: ${added}`, "ok");
+        }
       } catch (err) {
         setStatus(err.message, "error");
       }
